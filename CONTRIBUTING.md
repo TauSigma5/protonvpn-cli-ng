@@ -15,3 +15,7 @@ By making a contribution to this project you agree to the following:
 1. Ensure that your code is [Flake8](https://flake8.pycqa.org/en/latest/) compatible. In cases this doesn't work out, use the `# noqa` comment.
 2. Ensure that your code is compatible with the lowest Python Version supported by this project (Currently 3.5)
 3. If applicable, update [DOCUMENTATION.md](https://github.com/ProtonVPN/protonvpn-cli-ng/blob/master/DOCUMENTATION.md) and [USAGE.md](https://github.com/ProtonVPN/protonvpn-cli-ng/blob/master/USAGE.md) to reflect changes correctly.
+4. If your PR fixes an issue, prefix your commit with `Fix #42:` where 42 is the corresponding issue number.
+5. Use descriptive commit messages.
+6. Limit the subject of your commit message to 50 characters.
+7. Wrap the body of your commit message at 72 characters.
