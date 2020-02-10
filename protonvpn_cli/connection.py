@@ -632,6 +632,8 @@ def manage_ipv6(mode):
     disable: Disables IPv6 for the default interface.
     restore: Revert changes and restore original configuration.
     """
+    if int(get_config_value("USER", "ipv6_leak_protection")) == 0:
+        return
 
     ipv6_backupfile = os.path.join(CONFIG_DIR, "ipv6.backup")
     ip6tables_backupfile = os.path.join(CONFIG_DIR, "ip6tables.backup")

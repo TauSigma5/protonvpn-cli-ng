@@ -162,6 +162,7 @@ def init_cli():
             "dns_leak_protection": "1",
             "custom_dns": "None",
             "check_update_interval": "3",
+            "ipv6_leak_protection": "1",
         }
         config["metadata"] = {
             "last_api_pull": "0",
@@ -316,7 +317,8 @@ def configure_cli():
             "4) DNS Management\n"
             "5) Kill Switch\n"
             "6) Split Tunneling\n"
-            "7) Purge Configuration\n"
+            "7) IPv6 Leak Protection\n"
+            "8) Purge Configuration\n"
         )
 
         user_choice = input(
@@ -342,8 +344,11 @@ def configure_cli():
         elif user_choice == "6":
             set_split_tunnel()
             break
-        # Make sure this is always the last option
         elif user_choice == "7":
+            set_ipv6_leak_protection()
+            break
+        # Make sure this is always the last option
+        elif user_choice == "8":
             purge_configuration()
             break
         elif user_choice == "":
@@ -656,3 +661,24 @@ def set_split_tunnel():
     print()
     print("Split tunneling configuration updated.")
     make_ovpn_template()
+
+
+def set_ipv6_leak_protection():
+    """Allows the user to choose whether or not to enable IPv6 Leak Protection"""
+
+    print()
+    print(
+            "IPv6 Leak Protection makes sure that no traffic "
+            "is being leaked out using IPv6.\n"
+            "For security reasons enabling this option is highly recommended.\n"
+        )
+    user_choice = input("Enable IPv6 Leak Protection? [Y/n]: ")
+
+    if user_choice.casefold() == 'n':
+        set_config_value("USER", "ipv6_leak_protection", 0)
+    else:
+        set_config_value("USER", "ipv6_leak_protection", 1)
+    
+
+    print()
+    print("IPv6 leak protection configuration updated")

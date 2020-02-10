@@ -445,6 +445,7 @@ def check_init():
                     "check_update_interval": "3",
                     "killswitch": "0",
                     "split_tunnel": "0",
+                    "ipv6_leak_protection": "1",
                 },
             }
 

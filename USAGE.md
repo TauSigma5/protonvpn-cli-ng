@@ -342,9 +342,13 @@ To enable DNS Leak Protection use the `protonvpn configure` command, then press 
 
 ProtonVPN-CLI features an IPv6 Leak Protection feature. It makes sure that your IPv6 address is not leaked when you connect to a ProtonVPN server.
 
-This feature is enabled by default, and for security reasons, it can't be disabled.
+This feature is enabled by default, and for security reasons, it is not recommended to disable it as it will allow IPv6 traffic to pass normally through your network.
 
 It works by detecting the IPv6 address, backing it up, and removing it from the default interface. When disconnecting, it adds the IPv6 address back to the default interface and deletes the backup.
+
+**Disabling IPv6 Leak Protection**
+
+To disable IPv6 Leak Protection, use the `protonvpn configure` command. Then press `n` to disable IPv6 leak protection.
 
 ### Kill Switch
 
