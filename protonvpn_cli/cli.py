@@ -166,6 +166,7 @@ def init_cli():
         config["metadata"] = {
             "last_api_pull": "0",
             "last_update_check": str(int(time.time())),
+            "api_domain": "api.protonvpn.ch"
         }
 
         with open(CONFIG_FILE, "w") as f:

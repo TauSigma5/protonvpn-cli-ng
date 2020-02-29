@@ -24,8 +24,31 @@ from .constants import (
 def call_api(endpoint, json_format=True, handle_errors=True):
     """Call to the ProtonVPN API."""
 
-    api_domain = "https://api.protonvpn.ch"
-    url = api_domain + endpoint
+    def send_request(url, json_format=json_format):
+        """Calls API through domains and returns None if there are errors"""
+        try:
+            response = requests.get(url, headers=headers)
+        except (requests.exceptions.ConnectionError,
+                requests.exceptions.ConnectTimeout):
+            logger.debug("Error connecting to {0}".format(url))
+            return None
+
+        try:
+            response.raise_for_status()
+        except requests.exceptions.HTTPError:
+            logger.debug("Bad Return Code: {0}".format(response.status_code))
+            return None
+
+        if json_format:
+            logger.debug("Successful json response")
+            return response.json()
+        else:
+            logger.debug("Successful non-json response")
+            return response
+
+    api_domain = get_config_value("metadata", "api_domain")
+    url = "https://" + api_domain + endpoint
+    api_domains = ["api.protonvpn.ch", "api.protonmail.ch"]
 
     headers = {
         "x-pm-appversion": "Other",
@@ -40,33 +63,46 @@ def call_api(endpoint, json_format=True, handle_errors=True):
         response = requests.get(url, headers=headers)
         return response
 
-    try:
-        response = requests.get(url, headers=headers)
-    except (requests.exceptions.ConnectionError,
-            requests.exceptions.ConnectTimeout):
-        print(
-            "[!] There was an error connecting to the ProtonVPN API.\n"
-            "[!] Please make sure your connection is working properly!"
-        )
-        logger.debug("Error connecting to ProtonVPN API")
-        sys.exit(1)
-    try:
-        response.raise_for_status()
-    except requests.exceptions.HTTPError:
-        print(
-            "[!] There was an error with accessing the ProtonVPN API.\n"
-            "[!] Please make sure your connection is working properly!\n"
-            "[!] HTTP Error Code: {0}".format(response.status_code)
-        )
-        logger.debug("Bad Return Code: {0}".format(response.status_code))
-        sys.exit(1)
+    result = send_request(url)
 
-    if json_format:
-        logger.debug("Successful json response")
-        return response.json()
+    if result is not None:
+        return result
     else:
-        logger.debug("Successful non-json response")
-        return response
+        logger.debug("Failed to call {0}".format(url))
+        if api_domain in api_domains:
+            # Checks to see if other APIs work
+            api_domains.remove(api_domain)
+
+            for api_domain in api_domains:
+                url = "https://" + api_domain + endpoint
+                result = send_request(url)
+
+                if result is not None:
+                    # Write API into config file for next time
+                    logger.debug(
+                            "Writing successful api {0} into config file"
+                            .format(api_domain)
+                            )
+                    set_config_value("metadata", "api_domain", api_domain)
+                    return result
+        else:
+            # Starts with ProtonVPN API
+            for api_domain in api_domains:
+                url = "https://" + api_domain + endpoint
+                result = send_request(url)
+
+                if result is not None:
+                    # Write API into config file for next time
+                    set_config_value("metadata", "api_domain", api_domain)
+                    return result
+
+        # Display error message if all APIs fail.
+        print(
+            "[!] Error connecting to all available APIs \n"
+            "[!] Please check your internet connection"
+            )
+        logger.debug("Error connecting to all available APIs")
+        sys.exit(1)
 
 
 def pull_server_data(force=False):
