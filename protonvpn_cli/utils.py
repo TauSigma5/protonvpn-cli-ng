@@ -105,6 +105,9 @@ def get_servers():
 
     user_tier = int(get_config_value("USER", "tier"))
 
+    if user_tier == 4:
+        user_tier = 3
+
     # Sort server IDs by Tier
     return [server for server in servers if server["Tier"] <= user_tier and server["Status"] == 1] # noqa
 
