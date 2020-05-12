@@ -16,7 +16,6 @@ username = get_config_value("USER", "username")
 password = ""
 curser_location = 1
 focused_field = None
-tip = ""
 
 
 def settings_tui():
@@ -34,6 +33,9 @@ def settings_tui():
 
     right_window = curses.newwin(ceil(rows - rows / 6), ceil(cols/1.63), # noqa
                                  ceil(rows / 10), ceil(cols - cols / 1.57))
+
+    tips_window = curses.newwin(rows - 2, cols - 2, ceil(rows - rows / 22),
+                                ceil(cols - (cols - 1)))
 
     # curses.window cannot be instantiated, so the below classes cannot inhert
     # from curses.window and functions would have to be reimplemented manually
@@ -225,6 +227,33 @@ def settings_tui():
             l_scr.set_hovered_line(selected_line)
             l_scr.update_home_page()
 
+    class tips_scr(basic_window):
+        """Implements additional functions for the tips window"""
+        default = "Press CTRL-C to exit ProtonVPN Settings"
+        tip = default
+
+        def update(self):
+            """Updates the tips screen when window size changes"""
+            rows, cols = stdscr.getmaxyx()
+            scr = self.window
+
+            scr.clear()
+            scr.resize(1, cols - 2)
+            scr.mvwin(rows - 2, ceil(cols - (cols - 1)))
+            # Insert easter egg code
+            scr.addstr(0, 1, self.tip, curses.A_REVERSE)
+            scr.refresh()
+
+        def set_tip(self, str=default):
+            """Sets tip screen, defualts to the exit guide"""
+            rows, cols = stdscr.getmaxyx()
+            scr = self.window
+            self.tip = str
+
+            scr.clear()
+            scr.addstr(0, 1, self.tip, curses.A_REVERSE)
+            scr.refresh()
+
     # Sets the curser to invisible by default
     curses.curs_set(0)
 
@@ -236,6 +265,9 @@ def settings_tui():
 
     # Initializes the right side menu
     r_screen = right_menu_scr(l_screen, right_window)
+
+    # Initializes the tips window
+    tips = tips_scr(tips_window)
 
     def redraw_screen():
         """Redraws the screen when called to make the window responsive to terminal size changes."""
@@ -250,37 +282,14 @@ def settings_tui():
         # Adds the title at the top
         stdscr.addstr(ceil(rows / 22.5), ceil(cols / 2 - 12),
                       "ProtonVPN-CLI Settings", curses.A_BOLD)
-
-        set_tip("Press CTRL-C to exit ProtonVPN settings.")
-
         stdscr.refresh()
+
+        tips.update()
 
         # Refreshes the left and right screens to the new
         # screen size
         l_screen.update()
         r_screen.update()
-
-    def set_tip(input=None):
-        """Sets the tip on the bottom left corner."""
-        # NOTE TO SELF: PUT EASTER EGG HERE
-        global tip
-
-        rows, cols = stdscr.getmaxyx()
-        default = "Press CTRL-C to exit ProtonVPN settings."
-
-        # Remove old tip
-        for i in range(ceil(cols - (cols - 1)), len(tip)):
-            if i < cols:
-                stdscr.delch(ceil(rows - rows / 22), i)
-
-        if input is None:
-            tip = default
-        else:
-            tip = input
-
-        stdscr.addstr(ceil(rows - rows / 22), ceil(cols - (cols - 1)),
-                      tip, curses.A_REVERSE)
-        stdscr.refresh()
 
     def resize_handler(signum, frame):
         """Handles the resizing by terminating the current windows and redraws the screen."""
@@ -429,6 +438,7 @@ def settings_tui():
         # Enable Echoing and curser display
         curses.curs_set(2)
 
+        focused_field = "username"
         edit_field(username_box)
         # reset curser location between boxes
         curser_location = 1
@@ -438,8 +448,7 @@ def settings_tui():
         # Disable echoing and curser display again
         curses.curs_set(0)
 
-        set_tip("If you want to save and exit, press Enter, if not, just hit"
-                " the left or right arrow keys.")
+        tips.set_tip("If you want to save and exit, press Enter, if not, just hit the left or right arrow keys.")
 
         char1 = scr.getch()
         if char1 not in [None, -1, 410]:
@@ -451,17 +460,17 @@ def settings_tui():
                     f.write("{0}\n{1}".format(username, password))
                     logger.debug("Passfile updated")
                     scr.addstr(ceil(rows / 1.5), ceil(cols / 2 - 15),
-                               "Username and Password Updated", curses.A_REVERSE)
+                               "Username and Password Updated", curses.A_REVERSE) # noqa
                     scr.refresh()
                     os.chmod(PASSFILE, 0o600)
 
-                set_tip()
+                tips.set_tip()
             elif char1 == 27:
                 char2 = scr.getch()
                 char3 = scr.getch()
 
                 if char1 == 27 and char2 == 91 and char3 in [67, 68]:
-                    set_tip()
+                    tips.set_tip()
 
     def pvpn_plan():
         """Draws the right side window for choosing ProtonVPN Plans."""
@@ -506,6 +515,7 @@ def settings_tui():
 
         while 1:
             char1 = scr.getch()
+            rows, cols = scr.getmaxyx()
             if char1 not in [None, -1, 410]:
                 if char1 in [10, 13]:
                     set_config_value("USER", "tier", selection)
@@ -797,6 +807,7 @@ def settings_tui():
         # Catches errors caused by resizing the window to too small of a size
         # and also terminates curses before raising the exception
         # so as not to cause breakage of terminal
+        # Uncomment below lines before releasing
             #if "ERR" in str(e):
             #    curses.endwin()
             #    print("[!] ProtonVPN Settings has crashed.")
