@@ -5,6 +5,7 @@ import sys
 from signal import signal, SIGWINCH
 from math import ceil
 import shutil
+import random
 from .utils import set_config_value, get_config_value
 from .logger import logger
 from .constants import (
@@ -240,7 +241,7 @@ def settings_tui():
             scr.clear()
             scr.resize(1, cols - 2)
             scr.mvwin(rows - 2, ceil(cols - (cols - 1)))
-            # Insert easter egg code
+            self.tip = self._mystery(self.tip)
             scr.addstr(0, 1, self.tip, curses.A_REVERSE)
             scr.refresh()
 
@@ -248,11 +249,22 @@ def settings_tui():
             """Sets tip screen, defualts to the exit guide"""
             rows, cols = stdscr.getmaxyx()
             scr = self.window
-            self.tip = str
+            self.tip = self._mystery(str)
 
             scr.clear()
             scr.addstr(0, 1, self.tip, curses.A_REVERSE)
             scr.refresh()
+
+        def _mystery(self, str):
+            easter_eggs = ["Look up! It's our servers in the sky!", "Soon™",
+                           "Made with <3",
+                           "Made globally, hosted in Switzerland!",
+                           "Powered by artificial quantum singularities"]
+
+            if random.randint(0, 500) == 256:
+                return easter_eggs[random.randint(0, len(easter_eggs))]
+            else:
+                return str
 
     # Sets the curser to invisible by default
     curses.curs_set(0)
@@ -479,6 +491,9 @@ def settings_tui():
         scr = r_screen
         selection = 0
 
+        tips.set_tip("Use the up and down arrows to select the option."
+                     " Pressing enter saves the choice.")
+
         def update_tier_menu(selection=None):
             rows, cols = scr.getmaxyx()
             current_plan = int(get_config_value("USER", "tier"))
@@ -540,12 +555,16 @@ def settings_tui():
                         # left and right
                         update_tier_menu(None)
                         break
+        tips.set_tip()
 
     def default_protocol():
         """Draws the right side window for choosing the default OpenVPN Protocol."""
         ovpn_protocols = ["udp", "tcp"]
         scr = r_screen
         selection = 0
+
+        tips.set_tip("Use the up and down arrows to select the option."
+                     " Pressing enter saves the choice.")
 
         def update_protocol_menu(selection=None):
             rows, cols = scr.getmaxyx()
@@ -609,6 +628,7 @@ def settings_tui():
                         # left and right
                         update_protocol_menu(None)
                         break
+        tips.set_tip()
 
     def dns_management():
         """Draws the right side window for toggling DNS leak protection and set custom servers."""
@@ -622,6 +642,9 @@ def settings_tui():
 
         scr = r_screen
         selection = 0
+
+        tips.set_tip("Use the up and down arrows to select the option."
+                     " Pressing enter saves the choice.")
 
         def update_killswitch_menu(selection=None):
             rows, cols = scr.getmaxyx()
@@ -685,6 +708,7 @@ def settings_tui():
                         # left and right
                         update_killswitch_menu(None)
                         break
+        tips.set_tip()
 
     def split_tunneling():
         """Draws the right side window for configuring split tunneling."""
@@ -696,6 +720,8 @@ def settings_tui():
         scr = r_screen
         selection = 0
 
+        tips.set_tip("Use the up and down arrows to select the option.")
+
         def update_purge_menu(selection=None):
             rows, cols = scr.getmaxyx()
             half = ceil(rows / 2 - 2)
@@ -703,7 +729,7 @@ def settings_tui():
 
             scr.clear()
             scr.border()
-            scr.addstr(half - 3, ceil(cols / 2 - 28),
+            scr.addstr(half - 3, ceil(cols / 2 - 24),
                        "Are you sure you want to purge the configuration?",
                        curses.A_BOLD)
 
