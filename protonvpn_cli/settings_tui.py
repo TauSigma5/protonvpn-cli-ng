@@ -17,6 +17,9 @@ username = get_config_value("USER", "username")
 password = ""
 curser_location = 1
 focused_field = None
+# This allows DNS and split tunneling to preserve state when scaling.
+dns_content = ""
+split_tunnel_content = ""
 
 
 def settings_tui():
@@ -24,15 +27,16 @@ def settings_tui():
     # Initializes the main window
     stdscr = curses.initscr()
     rows, cols = stdscr.getmaxyx()
+    stdscr.keypad(True)
 
     # Menu options
     menu = ["Username and Password", "ProtonVPN Plan", "Default Protocol",
-            "DNS Management", "Kill Switch", "Split Tunneling", "Purge Configuration"] # noqa
+            "DNS Management", "Kill Switch", "Split Tunneling", "Purge Configuration"]  # noqa
 
     left_window = curses.newwin(ceil(rows - rows / 6), ceil(cols / 3),
                                 ceil(rows / 10), ceil(cols / 50))
 
-    right_window = curses.newwin(ceil(rows - rows / 6), ceil(cols/1.63), # noqa
+    right_window = curses.newwin(ceil(rows - rows / 6), ceil(cols/1.63),  # noqa
                                  ceil(rows / 10), ceil(cols - cols / 1.57))
 
     tips_window = curses.newwin(rows - 2, cols - 2, ceil(rows - rows / 22),
@@ -147,7 +151,7 @@ def settings_tui():
                     scr.addstr(j * 2, ceil(cols / 2 - len(i) / 2), "* " + i,
                                curses.A_REVERSE)
                 elif j - 2 == hovered_line:
-                    scr.addstr(j * 2, ceil(cols / 2 - len(i) / 2), i, curses.A_REVERSE) # noqa
+                    scr.addstr(j * 2, ceil(cols / 2 - len(i) / 2), i, curses.A_REVERSE)  # noqa
                 elif j - 2 == selected_line:
                     scr.addstr(j * 2, ceil(cols / 2 - len(i) / 2), "* " + i,
                                curses.A_BOLD)
@@ -262,7 +266,7 @@ def settings_tui():
                            "Powered by artificial quantum singularities"]
 
             if random.randint(0, 500) == 256:
-                return easter_eggs[random.randint(0, len(easter_eggs))]
+                return easter_eggs[random.randint(0, len(easter_eggs) - 1)]
             else:
                 return str
 
@@ -460,7 +464,8 @@ def settings_tui():
         # Disable echoing and curser display again
         curses.curs_set(0)
 
-        tips.set_tip("If you want to save and exit, press Enter, if not, just hit the left or right arrow keys.")
+        tips.set_tip(
+            "If you want to save and exit, press Enter, if not, just hit the left or right arrow keys.")
 
         char1 = scr.getch()
         if char1 not in [None, -1, 410]:
@@ -472,7 +477,7 @@ def settings_tui():
                     f.write("{0}\n{1}".format(username, password))
                     logger.debug("Passfile updated")
                     scr.addstr(ceil(rows / 1.5), ceil(cols / 2 - 15),
-                               "Username and Password Updated", curses.A_REVERSE) # noqa
+                               "Username and Password Updated", curses.A_REVERSE)  # noqa
                     scr.refresh()
                     os.chmod(PASSFILE, 0o600)
 
@@ -534,7 +539,7 @@ def settings_tui():
             if char1 not in [None, -1, 410]:
                 if char1 in [10, 13]:
                     set_config_value("USER", "tier", selection)
-                    scr.addstr(ceil(rows / 1.5), ceil(cols / 2 - 15), "Tier Updated", # noqa
+                    scr.addstr(ceil(rows / 1.5), ceil(cols / 2 - 15), "Tier Updated",  # noqa
                                curses.A_REVERSE)
                     # Redraw the window so the asterisk moves immediately
                     update_tier_menu(None)
@@ -582,12 +587,12 @@ def settings_tui():
             for i in ovpn_protocols:
                 # Display a star and highlight if it is the selection
                 # and the current protocol in the config file
-                if j - half == selection and ovpn_protocols[j - half] == current_protocol: # noqa
+                if j - half == selection and ovpn_protocols[j - half] == current_protocol:  # noqa
                     scr.addstr(j + j - half, ceil(cols / 2 - len(i) / 2),
                                ("* " + i).upper(), curses.A_REVERSE)
                 # Highlight if it is the current selection
                 elif j - half == selection:
-                    scr.addstr(j + j - half, ceil(cols / 2 - len(i) / 2), i.upper(), # noqa
+                    scr.addstr(j + j - half, ceil(cols / 2 - len(i) / 2), i.upper(),  # noqa
                                curses.A_REVERSE)
                 # Display a star if it's the current default protocol
                 # but not selected
@@ -595,7 +600,7 @@ def settings_tui():
                     scr.addstr(j + j - half, ceil(cols / 2 - len(i) / 2),
                                ("* " + i).upper(), curses.A_BOLD)
                 else:
-                    scr.addstr(j + j - half, ceil(cols / 2 - len(i) / 2), i.upper()) # noqa
+                    scr.addstr(j + j - half, ceil(cols / 2 - len(i) / 2), i.upper())  # noqa
                 j += 1
 
             scr.refresh()
@@ -632,7 +637,29 @@ def settings_tui():
 
     def dns_management():
         """Draws the right side window for toggling DNS leak protection and set custom servers."""
-        pass
+        scr = r_screen
+        rows, cols = scr.getmaxyx()
+
+        global dns_content
+
+        scr.addstr(ceil(rows / 2 - 6), ceil(cols / 2 - 25), 
+                   "Please enter IP address(es) of your DNS Resolvers", curses.A_BOLD)
+        
+        scr.refresh()
+
+        rows, cols = stdscr.getmaxyx()
+        
+        textbox = curses.newwin(4, 16, ceil(rows / 2 - 2), ceil(cols - cols / 3 - 8))
+        textbox.border()
+        textbox.refresh()
+
+        # Enable Echoing and curser display
+        curses.curs_set(2)
+        while True:
+            # Do Stuff
+            break
+        curses.curs_set(0)
+
 
     def kill_switch():
         """ Draws the right side window for managing killswitch."""
@@ -655,19 +682,19 @@ def settings_tui():
             scr.clear()
             scr.border()
             scr.addstr(half - 3, ceil(cols / 2 - 28),
-                       "Please select your preferred killswitch configuration:", # noqa
+                       "Please select your preferred killswitch configuration:",  # noqa
                        curses.A_BOLD)
 
             # Draws each killswitch option in the right
             for i in killswitch_options:
                 # Display a star and highlight if it is the selection
                 # and the current killswitch config in the file
-                if j - half == selection and j - half == current_config: # noqa
+                if j - half == selection and j - half == current_config:  # noqa
                     scr.addstr(j + j - half, ceil(cols / 2 - len(i) / 2),
                                ("* " + i).upper(), curses.A_REVERSE)
                 # Highlight if it is the current selection
                 elif j - half == selection:
-                    scr.addstr(j + j - half, ceil(cols / 2 - len(i) / 2), i.upper(), # noqa
+                    scr.addstr(j + j - half, ceil(cols / 2 - len(i) / 2), i.upper(),  # noqa
                                curses.A_REVERSE)
                 # Display a star if it's the current killswitch config
                 # but not selected
@@ -675,7 +702,7 @@ def settings_tui():
                     scr.addstr(j + j - half, ceil(cols / 2 - len(i) / 2),
                                ("* " + i).upper(), curses.A_BOLD)
                 else:
-                    scr.addstr(j + j - half, ceil(cols / 2 - len(i) / 2), i.upper()) # noqa
+                    scr.addstr(j + j - half, ceil(cols / 2 - len(i) / 2), i.upper())  # noqa
                 j += 1
 
             scr.refresh()
@@ -737,12 +764,12 @@ def settings_tui():
             for i in options:
                 # Highlight if it is the current selection
                 if j - half == selection:
-                    scr.addstr(j + j - half, ceil(cols / 2 - len(i) / 2), i.upper(), # noqa
+                    scr.addstr(j + j - half, ceil(cols / 2 - len(i) / 2), i.upper(),  # noqa
                                curses.A_REVERSE)
                 # Display a star if it's the current killswitch config
                 # but not selected
                 else:
-                    scr.addstr(j + j - half, ceil(cols / 2 - len(i) / 2), i.upper()) # noqa
+                    scr.addstr(j + j - half, ceil(cols / 2 - len(i) / 2), i.upper())  # noqa
                 j += 1
 
             scr.refresh()
@@ -834,10 +861,10 @@ def settings_tui():
         # and also terminates curses before raising the exception
         # so as not to cause breakage of terminal
         # Uncomment below lines before releasing
-            #if "ERR" in str(e):
-            #    curses.endwin()
-            #    print("[!] ProtonVPN Settings has crashed.")
-            #    print("[!] Please avoid making the terminal window too small")
+        # if "ERR" in str(e):
+        #    curses.endwin()
+        #    print("[!] ProtonVPN Settings has crashed.")
+        #    print("[!] Please avoid making the terminal window too small")
         # Terminate curses before crashing so that the terminal \
         # doesn't get screwed up
         curses.endwin()
