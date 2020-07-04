@@ -65,7 +65,7 @@ from .utils import (
 from .constants import (
     CONFIG_DIR, CONFIG_FILE, PASSFILE, USER, VERSION, SPLIT_TUNNEL_FILE
 )
-from .settings_tui import settings_tui
+from .settings import settings_tui
 
 
 def main():
