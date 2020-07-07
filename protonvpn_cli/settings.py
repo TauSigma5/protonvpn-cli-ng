@@ -96,6 +96,10 @@ def settings_tui():
                 self.window.hline(y, x)
             else:
                 self.window.hline(y, x, ch, n)
+        
+        def keypad(self, flag):
+            """Sets if some sequences are ignored or not"""
+            self.window.keypad(flag)
 
     class left_menu_scr(basic_window):
         """Extends the curses.window class to add additional functions."""
@@ -365,12 +369,12 @@ def settings_tui():
                        curses.A_BOLD)
             scr.refresh()
 
-            username_box.resize(3, ceil(cols / 3))
-            username_box.mvwin(ceil(rows / 2 - rows / 12), ceil(cols / 1.09))
+            username_box.resize(3, ceil(cols / 2.5))
+            username_box.mvwin(ceil(rows / 2 - rows / 12), ceil(cols / 1.13))
             username_box.addstr(1, 1, username)
 
-            password_box.resize(3, ceil(cols / 3))
-            password_box.mvwin(ceil(rows / 2 + rows / 12), ceil(cols / 1.09))
+            password_box.resize(3, ceil(cols / 2.5))
+            password_box.mvwin(ceil(rows / 2 + rows / 12), ceil(cols / 1.13))
             password_box.addstr(1, 1, draw_asterisks(len(password)))
 
             username_box.border()
@@ -584,7 +588,7 @@ def settings_tui():
             scr.border()
 
             i = 0
-            # I'm lazy okay?
+            # I'm hella lazy
             for line in instructions:
                 scr.addstr(ceil(half / 2.5 + i), ceil(cols / 2 - ceil(len(line)/2)),
                            line,
@@ -619,40 +623,64 @@ def settings_tui():
             scr.refresh()
 
     class dns_management(menu):
-        """Draws the right side window for toggling DNS leak protection and set custom servers."""
+        """Draws the right side window for toggling DNS leak protection and setting custom servers."""
         name = "DNS Management"
         dns_content = ""
-        options = ["Enable DNS Leak Protection (recommended)", 
-                   "Configure Custom DNS Servers",
-                   "Disable DNS Management"]
+        options = ["Disable DNS Management",
+                   "Enable DNS Leak Protection (recommended)",
+                   "Configure Custom DNS Servers"]
+        instructions = ["DNS Leak Protection makes sure that"
+                        "you always use ProtonVPN's DNS servers.",
+                        "For security reasons enabling leak"
+                        "protection is recommended."]
+
         selection = 0
+        current_config = None
         menu_state = 0
+        textpad = None
+        textbox_win = None
+        textpad_win = None
 
         def show(self):
-            refresh = self.refresh()
-            selection = self.selection
+            refresh = self.refresh
             options = self.options
+            scr = self.window
+
+            scr.clear()
+            scr.border()
 
             tips.set_tip("Use the up and down arrows to select the option."
                          " Pressing enter saves the choice.")
+
+            self.current_config = int(get_config_value("USER", "dns_leak_protection")) # noqa
+
+            if self.current_config == 0:
+                if self.dns_content != "None":
+                    self.dns_content = get_config_value("USER", "custom_dns")
+                    self.current_config = 2
+        
+            refresh()
 
             while 1:
                 char1 = scr.getch()
 
                 if char1 not in [None, -1, 410]:
                     if char1 in [10, 13]:
-                        if selection == 0:
-                            set_config_value("USER", "dns_leak_protection",
-                                             1)
-                        elif selection == 1:
+                        if self.selection == 0:
                             set_config_value("USER", "dns_leak_protection",
                                              0)
-                            self.show_secondary_menu()
-                            break
+                            set_config_value("USER", "custom_dns", "None")
+                        elif self.selection == 1:
+                            set_config_value("USER", "dns_leak_protection",
+                                             1)
+                            set_config_value("USER", "custom_dns", "None")
                         else:
                             set_config_value("USER", "dns_leak_protection",
                                              0)
+                            self.show_secondary_menu()
+                        
                         # Redraw the window so the asterisk moves immediately
+                        self.current_config = self.selection
                         refresh()
                         break
                     else:
@@ -661,29 +689,100 @@ def settings_tui():
 
                         if char1 == 27 and char2 == 91 and char3 == 65:
                             # Up
-                            selection = (selection - 1) % len(options)
-                            refresh(selection)
+                            self.selection = (self.selection - 1) % len(options) # noqa
+                            refresh(self.selection)
                         elif char1 == 27 and char2 == 91 and char3 == 66:
                             # Down
-                            selection = (selection + 1) % len(options)
-                            refresh(selection)
+                            self.selection = (self.selection + 1) % len(options) # noqa
+                            refresh(self.selection)
                         elif char1 == 27 and char2 == 91 and char3 in [67, 68]:
                             # left and right
                             refresh()
                             break
             tips.set_tip()
 
-        def refresh(self, selection=None):
-            if self.menu_state == 0:
-                # do stuff
-                pass
-            else:
-                # refresh menu 2
-                pass
-
         def show_secondary_menu(self):
             """Secondary menu shown when user wants to use custom DNS servers"""
-            pass
+            scr = self.window
+            rows, cols = scr.getmaxyx()
+
+            tips.set_tip("Enter 1 IP per line and hit CTRL-G when done.")
+
+            scr.clear()
+            scr.border()
+
+            scr.addstr(ceil(rows / 2 - 7), ceil(cols / 2 - 25),
+                       "Please enter IP address(es) of your DNS Resolvers",
+                       curses.A_BOLD)
+
+            scr.refresh()
+
+            rows, cols = stdscr.getmaxyx()
+            self.surrounding_win = curses.newwin(6, 18, ceil(rows / 2 - 3),
+                                                 ceil(cols - cols / 3 - 9))
+            self.surrounding_win.border()
+            self.surrounding_win.refresh()
+            self.textbox_win = curses.newwin(4, 16, ceil(rows / 2 - 2),
+                                             ceil(cols - cols / 3 - 8))
+            self.textbox = curses.textpad.Textbox(self.textbox_win)
+
+            # Enable Echoing and curser display
+            curses.curs_set(2)
+
+            # Fill in previous config if available
+            if self.dns_content != "":
+                for x in self.dns_content:
+                    self.textbox.do_command(x)
+            
+            # Get user input
+            self.textbox.edit()
+
+        def refresh(self, selection=None):
+            options = self.options
+            scr = self.window
+            instructions = self.instructions
+
+            rows, cols = scr.getmaxyx()
+            
+            if self.menu_state == 0:
+                # refresh menu 1
+
+                half = ceil(rows / 2 - 2)
+                j = half
+
+                i = 0
+                # I'm hella lazy
+                for line in instructions:
+                    scr.addstr(half - len(instructions) - 2 + i,
+                               ceil(cols / 2 - len(line)/2), line,
+                               curses.A_BOLD)
+                    i += 1
+
+                # Draws each DNS config in the right
+                for i in options:
+                    # Display a star and highlight if it is the selection
+                    # in the config file
+                    if j - half == self.selection and j - half == self.current_config:  # noqa
+                        scr.addstr(j + j - half, ceil(cols / 2 - len(i) / 2),
+                                   ("* " + i).upper(), curses.A_REVERSE)
+                    # Highlight if it is the current selection
+                    elif j - half == self.selection:
+                        scr.addstr(j + j - half, ceil(cols / 2 - len(i) / 2), i.upper(),  # noqa
+                                   curses.A_REVERSE)
+                    # Display a star if it's the current default protocol
+                    # but not selected
+                    elif j - half == self.current_config:
+                        scr.addstr(j + j - half, ceil(cols / 2 - len(i) / 2),
+                                   ("* " + i).upper(), curses.A_BOLD)
+                    else:
+                        scr.addstr(j + j - half, ceil(cols / 2 - len(i) / 2), i.upper())  # noqa
+                    j += 1
+
+                scr.refresh()
+            else:
+                # refresh menu 2
+                self.dns_content = self.textbox.gather()
+                self.show_secondary_menu()
 
     class killswitch(menu):
         """ Draws the right side window for managing killswitch."""
