@@ -13,6 +13,7 @@ from .constants import (
 )
 from . import connection
 
+
 def settings_tui():
     """Launches the TUI for ProtonVPN settings."""
     # Initializes the main window
@@ -136,12 +137,12 @@ def settings_tui():
             for i in menus:
                 name = i.name
                 if j - 2 == selected_line and selected_line == hovered_line:
-                    scr.addstr(j * 2, ceil(cols / 2 - len(name) / 2), "* " + name,
+                    scr.addstr(j * 2, ceil(cols / 2 - len(name) / 2), "* " + name, # noqa
                                curses.A_REVERSE)
                 elif j - 2 == hovered_line:
                     scr.addstr(j * 2, ceil(cols / 2 - len(name) / 2), name, curses.A_REVERSE)  # noqa
                 elif j - 2 == selected_line:
-                    scr.addstr(j * 2, ceil(cols / 2 - len(name) / 2), "* " + name,
+                    scr.addstr(j * 2, ceil(cols / 2 - len(name) / 2), "* " + name, # noqa
                                curses.A_BOLD)
                 else:
                     scr.addstr(j * 2, ceil(cols / 2 - len(name) / 2), name)
@@ -253,15 +254,15 @@ def settings_tui():
 
         def __init__(self, window):
             """Initially called"""
-            # This handles initialization and will automatically called when you 
-            # add it to the list of menus
+            # This handles initialization and will automatically called 
+            # when you add it to the list of menus
             # This should remain constant between menus
             self.window = window
-        
+
         def show(self):
             """Called when that menu item is selected"""
             assert False
-        
+
         def refresh(self):
             """Called on sigwinch"""
             assert False
@@ -277,58 +278,58 @@ def settings_tui():
         
         def show(self):
             scr = self.window
-            username = self.username
-            password = self.password
+            self.username = get_config_value("USER", "username")
 
             scr.clear()
             scr.border()
 
+            rows, cols = scr.getmaxyx()
+
             self.username_box = curses.newwin(3, ceil(cols / 3),
-                                     ceil(rows / 2 - rows / 12),
-                                     ceil(cols / 1.09))
+                                              ceil(rows / 2 - rows / 12),
+                                              ceil(cols / 1.09))
             self.password_box = curses.newwin(3, ceil(cols / 3),
-                                        ceil(rows / 2 + rows / 12),
-                                        ceil(cols / 1.09))
+                                              ceil(rows / 2 + rows / 12),
+                                              ceil(cols / 1.09))
 
             username_box = self.username_box
             password_box = self.password_box
             edit_field = self.edit_field
             
             # Writes in Username and Password Texts
-            scr.addstr(ceil(rows / 4.2), ceil(cols / 2 - 9), "OpenVPN Username:",
+            scr.addstr(ceil(rows / 4.2), ceil(cols / 2 - 9), "OpenVPN Username:", # noqa
                        curses.A_BOLD)
-            scr.addstr(ceil(rows / 2.5), ceil(cols / 2 - 9), "OpenVPN Password:",
+            scr.addstr(ceil(rows / 2.5), ceil(cols / 2 - 9), "OpenVPN Password:", # noqa
                        curses.A_BOLD)
             scr.refresh()
 
-
-            """Meat and bones. It's what runs after it gets called"""
             self.refresh()
 
             # Enable Echoing and curser display
             curses.curs_set(2)
 
-            focused_field = "username"
+            self.curser_location = len(self.username) + 1
+            self.focused_field = "username"
             edit_field(username_box)
             # reset curser location between boxes
-            curser_location = 1
-            focused_field = "password"
+            self.curser_location = 1
+            self.focused_field = "password"
             edit_field(password_box)
 
             # Disable echoing and curser display again
             curses.curs_set(0)
 
             tips.set_tip(
-                "If you want to save and exit, press Enter, if not, just hit the left or right arrow keys.")
+                "If you want to save and exit, press Enter, if not, just hit the left or right arrow keys.") # noqa
 
             char1 = scr.getch()
             if char1 not in [None, -1, 410]:
                 if char1 in [10, 13]:
                     # Write configuration
-                    set_config_value("USER", "username", username)
+                    set_config_value("USER", "username", self.username)
 
                     with open(PASSFILE, "w") as f:
-                        f.write("{0}\n{1}".format(username, password))
+                        f.write("{0}\n{1}".format(self.username, self.password)) # noqa
                         logger.debug("Passfile updated")
                         scr.addstr(ceil(rows / 1.5), ceil(cols / 2 - 15),
                                 "Username and Password Updated", curses.A_REVERSE)  # noqa
@@ -345,7 +346,6 @@ def settings_tui():
 
         def refresh(self):
             """Updates the window on sigwinch"""
-            self.username = get_config_value("USER", "username")
             scr = self.window
             username = self.username
             password = self.password
@@ -356,10 +356,14 @@ def settings_tui():
             scr.clear()
             scr.border()
 
-            stdscr.addstr(1, 1, "\"" + username + "\"")
-            stdscr.refresh()
-
             rows, cols = scr.getmaxyx()
+
+            # Writes in Username and Password Texts
+            scr.addstr(ceil(rows / 4.2), ceil(cols / 2 - 9), "OpenVPN Username:", # noqa
+                       curses.A_BOLD)
+            scr.addstr(ceil(rows / 2.5), ceil(cols / 2 - 9), "OpenVPN Password:", # noqa
+                       curses.A_BOLD)
+            scr.refresh()
 
             username_box.resize(3, ceil(cols / 3))
             username_box.mvwin(ceil(rows / 2 - rows / 12), ceil(cols / 1.09))
@@ -379,36 +383,30 @@ def settings_tui():
             focused_field = self.focused_field
             username_box = self.username_box
             password_box = self.password_box
-            username = self.username
-            password = self.password
-            curser_location = self.curser_location
 
             if focused_field == "username":
-                username_box.addch(1, curser_location, char)
+                username_box.addch(1, self.curser_location, char)
                 username_box.refresh()
-                username = username + char
+                self.username = self.username + char
             else:
-                password_box.addch(1, curser_location, "*")
+                password_box.addch(1, self.curser_location, "*")
                 password_box.refresh()
-                password = password + char
+                self.password = self.password + char
 
-            curser_location += 1
+            self.curser_location += 1
 
         def del_ch(self, field):
             """Handles deleting characters"""
-            curser_location = self.curser_location
-            username = self.username
-            password = self.password
 
-            field.delch(1, curser_location - 1)
+            field.delch(1, self.curser_location - 1)
             field.refresh()
-            if curser_location != 1:
-                curser_location -= 1
+            if self.curser_location != 1:
+                self.curser_location -= 1
 
             if self.focused_field == "username":
-                username = username[:-1]
+                self.username = self.username[:-1]
             else:
-                password = password[:-1]
+                self.password = self.password[:-1]
 
             # Refresh screen so right side line doesn't get screwed up
             field.clear()
@@ -424,10 +422,9 @@ def settings_tui():
 
         def edit_field(self, field):
             """Handles the username_field textbox"""
-            curser_location = self.curser_location
 
             while True:
-                char1 = field.getch(1, curser_location)
+                char1 = field.getch(1, self.curser_location)
 
                 # Printable ASCII character
                 if char1 not in [None, -1, 410]:
@@ -445,7 +442,6 @@ def settings_tui():
 
                     elif char1 in [10, 13]:
                         break
-
 
     class pvpn_plan(menu):
         """Draws the right side window for choosing ProtonVPN Plans."""
@@ -475,7 +471,7 @@ def settings_tui():
                     if char1 in [10, 13]:
                         set_config_value("USER", "tier", selection)
                         scr.addstr(ceil(rows / 1.5), ceil(cols / 2 - 15), "Tier Updated",  # noqa
-                                curses.A_REVERSE)
+                                   curses.A_REVERSE)
                         # Redraw the window so the asterisk moves immediately
                         update_tier_menu(None)
                         break
@@ -536,7 +532,7 @@ def settings_tui():
         name = "Default Protocol"
         ovpn_protocols = ["udp", "tcp"]
         selection = 0
-        
+
         def show(self):
             scr = self.window
             update_protocol_menu = self.refresh
@@ -551,7 +547,7 @@ def settings_tui():
                 if char1 not in [None, -1, 410]:
                     if char1 in [10, 13]:
                         set_config_value("USER", "default_protocol",
-                                        ovpn_protocols[selection])
+                                         ovpn_protocols[selection])
                         # Redraw the window so the asterisk moves immediately
                         update_protocol_menu(None)
                         break
@@ -576,8 +572,8 @@ def settings_tui():
         def refresh(self, selection=None):
             scr = self.window
             ovpn_protocols = self.ovpn_protocols
-            instructions = ["OpenVPN can act on two different protocols: UDP and TCP. UDP is preferred for speed but might",
-                            "be blocked in some networks. TCP is not as fast but a lot harder to block."]
+            instructions = ["OpenVPN can act on two different protocols: UDP and TCP. UDP is preferred for speed but might", # noqa
+                            "be blocked in some networks. TCP is not as fast but a lot harder to block."] # noqa
 
             rows, cols = scr.getmaxyx()
             current_protocol = get_config_value("USER", "default_protocol")
@@ -591,12 +587,14 @@ def settings_tui():
             # I'm lazy okay?
             for line in instructions:
                 scr.addstr(ceil(half / 2.5 + i), ceil(cols / 2 - ceil(len(line)/2)),
-                       line,
-                       curses.A_BOLD)
+                           line,
+                           curses.A_BOLD)
                 i += 1
-            
-            scr.addstr((half - 2), ceil(cols / 2) - ceil(len("Input your preferred protocol. (Default: UDP)")/ 2),
-                       "Input your preferred protocol. (Default: UDP)", curses.A_BOLD)
+
+            scr.addstr((half - 2), ceil(cols / 2) -
+                       ceil(len("Input your preferred protocol. (Default: UDP)") / 2), # noqa
+                       "Input your preferred protocol. (Default: UDP)",
+                       curses.A_BOLD)
 
             # Draws each default protocol in the right
             for i in ovpn_protocols:
@@ -624,7 +622,8 @@ def settings_tui():
         """Draws the right side window for toggling DNS leak protection and set custom servers."""
         name = "DNS Management"
         dns_content = ""
-        options = ["Enable DNS Leak Protection (recommended)", "Configure Custom DNS Servers", 
+        options = ["Enable DNS Leak Protection (recommended)", 
+                   "Configure Custom DNS Servers",
                    "Disable DNS Management"]
         selection = 0
         menu_state = 0
@@ -632,10 +631,11 @@ def settings_tui():
         def show(self):
             refresh = self.refresh()
             selection = self.selection
+            options = self.options
 
             tips.set_tip("Use the up and down arrows to select the option."
                          " Pressing enter saves the choice.")
-            
+
             while 1:
                 char1 = scr.getch()
 
@@ -643,7 +643,7 @@ def settings_tui():
                     if char1 in [10, 13]:
                         if selection == 0:
                             set_config_value("USER", "dns_leak_protection",
-                                            1)
+                                             1)
                         elif selection == 1:
                             set_config_value("USER", "dns_leak_protection",
                                              0)
@@ -672,21 +672,18 @@ def settings_tui():
                             refresh()
                             break
             tips.set_tip()
-            
 
-        
         def refresh(self, selection=None):
-            if menu_state == 0:
+            if self.menu_state == 0:
                 # do stuff
                 pass
             else:
                 # refresh menu 2
                 pass
-        
+
         def show_secondary_menu(self):
             """Secondary menu shown when user wants to use custom DNS servers"""
             pass
-
 
     class killswitch(menu):
         """ Draws the right side window for managing killswitch."""
@@ -714,7 +711,7 @@ def settings_tui():
                 if char1 not in [None, -1, 410]:
                     if char1 in [10, 13]:
                         set_config_value("USER", "killswitch",
-                                        selection)
+                                         selection)
                         # Redraw the window so the asterisk moves immediately
                         update_killswitch_menu()
                         break
@@ -724,11 +721,13 @@ def settings_tui():
 
                         if char1 == 27 and char2 == 91 and char3 == 65:
                             # Up
-                            selection = (selection - 1) % len(killswitch_options)
+                            selection = (
+                                selection - 1) % len(killswitch_options)
                             update_killswitch_menu(selection)
                         elif char1 == 27 and char2 == 91 and char3 == 66:
                             # Down
-                            selection = (selection + 1) % len(killswitch_options)
+                            selection = (
+                                selection + 1) % len(killswitch_options)
                             update_killswitch_menu(selection)
                         elif char1 == 27 and char2 == 91 and char3 in [67, 68]:
                             # left and right
@@ -778,10 +777,10 @@ def settings_tui():
 
         def show(self):
             pass
-        
+
         def refresh(self):
             pass
-    
+
     class purge_configuration(menu):
         """Draws right side menu for purge configuration page"""
         name = "Purge Configuration"
@@ -826,7 +825,7 @@ def settings_tui():
                             # left and right
                             update_purge_menu(None)
                             break
-        
+
         def refresh(self, selection=None):
             scr = self.window
             options = self.options
@@ -899,17 +898,17 @@ def settings_tui():
     tips = tips_scr(tips_window)
 
     # Add new menus here:
-    uninitialized_menus = [username_password, pvpn_plan, default_protocol, 
-                           dns_management, killswitch, split_tunneling, 
+    uninitialized_menus = [username_password, pvpn_plan, default_protocol,
+                           dns_management, killswitch, split_tunneling,
                            purge_configuration]
-    
+
     # This is a list of menu objects that are used
     menus = []
 
     # Initializes the menu objects
     for menu in uninitialized_menus:
         menus.append(menu(r_screen))
-    
+
     signal(SIGWINCH, resize_handler)
     curses.initscr()
     scr = l_screen
@@ -970,5 +969,3 @@ def settings_tui():
         # doesn't get screwed up
         curses.endwin()
         raise e
-
-    
