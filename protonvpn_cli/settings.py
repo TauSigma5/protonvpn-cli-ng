@@ -6,10 +6,10 @@ from signal import signal, SIGWINCH
 from math import ceil
 import shutil
 import random
-from .utils import set_config_value, get_config_value
+from .utils import set_config_value, get_config_value, is_valid_ip
 from .logger import logger
 from .constants import (
-    CONFIG_DIR, CONFIG_FILE, PASSFILE, USER, VERSION, SPLIT_TUNNEL_FILE
+    CONFIG_DIR, PASSFILE, SPLIT_TUNNEL_FILE
 )
 from . import connection
 
@@ -96,7 +96,7 @@ def settings_tui():
                 self.window.hline(y, x)
             else:
                 self.window.hline(y, x, ch, n)
-        
+
         def keypad(self, flag):
             """Sets if some sequences are ignored or not"""
             self.window.keypad(flag)
@@ -141,12 +141,12 @@ def settings_tui():
             for i in menus:
                 name = i.name
                 if j - 2 == selected_line and selected_line == hovered_line:
-                    scr.addstr(j * 2, ceil(cols / 2 - len(name) / 2), "* " + name, # noqa
+                    scr.addstr(j * 2, ceil(cols / 2 - len(name) / 2), "* " + name,  # noqa
                                curses.A_REVERSE)
                 elif j - 2 == hovered_line:
                     scr.addstr(j * 2, ceil(cols / 2 - len(name) / 2), name, curses.A_REVERSE)  # noqa
                 elif j - 2 == selected_line:
-                    scr.addstr(j * 2, ceil(cols / 2 - len(name) / 2), "* " + name, # noqa
+                    scr.addstr(j * 2, ceil(cols / 2 - len(name) / 2), "* " + name,  # noqa
                                curses.A_BOLD)
                 else:
                     scr.addstr(j * 2, ceil(cols / 2 - len(name) / 2), name)
@@ -258,7 +258,7 @@ def settings_tui():
 
         def __init__(self, window):
             """Initially called"""
-            # This handles initialization and will automatically called 
+            # This handles initialization and will automatically called
             # when you add it to the list of menus
             # This should remain constant between menus
             self.window = window
@@ -279,7 +279,7 @@ def settings_tui():
         focused_field = None
         username_box = None
         password_box = None
-        
+
         def show(self):
             scr = self.window
             self.username = get_config_value("USER", "username")
@@ -299,11 +299,11 @@ def settings_tui():
             username_box = self.username_box
             password_box = self.password_box
             edit_field = self.edit_field
-            
+
             # Writes in Username and Password Texts
-            scr.addstr(ceil(rows / 4.2), ceil(cols / 2 - 9), "OpenVPN Username:", # noqa
+            scr.addstr(ceil(rows / 4.2), ceil(cols / 2 - 9), "OpenVPN Username:",  # noqa
                        curses.A_BOLD)
-            scr.addstr(ceil(rows / 2.5), ceil(cols / 2 - 9), "OpenVPN Password:", # noqa
+            scr.addstr(ceil(rows / 2.5), ceil(cols / 2 - 9), "OpenVPN Password:",  # noqa
                        curses.A_BOLD)
             scr.refresh()
 
@@ -324,7 +324,7 @@ def settings_tui():
             curses.curs_set(0)
 
             tips.set_tip(
-                "If you want to save and exit, press Enter, if not, just hit the left or right arrow keys.") # noqa
+                "If you want to save and exit, press Enter, if not, just hit the left or right arrow keys.")  # noqa
 
             char1 = scr.getch()
             if char1 not in [None, -1, 410]:
@@ -333,7 +333,7 @@ def settings_tui():
                     set_config_value("USER", "username", self.username)
 
                     with open(PASSFILE, "w") as f:
-                        f.write("{0}\n{1}".format(self.username, self.password)) # noqa
+                        f.write("{0}\n{1}".format(self.username, self.password))  # noqa
                         logger.debug("Passfile updated")
                         scr.addstr(ceil(rows / 1.5), ceil(cols / 2 - 15),
                                 "Username and Password Updated", curses.A_REVERSE)  # noqa
@@ -363,9 +363,9 @@ def settings_tui():
             rows, cols = scr.getmaxyx()
 
             # Writes in Username and Password Texts
-            scr.addstr(ceil(rows / 4.2), ceil(cols / 2 - 9), "OpenVPN Username:", # noqa
+            scr.addstr(ceil(rows / 4.2), ceil(cols / 2 - 9), "OpenVPN Username:",  # noqa
                        curses.A_BOLD)
-            scr.addstr(ceil(rows / 2.5), ceil(cols / 2 - 9), "OpenVPN Password:", # noqa
+            scr.addstr(ceil(rows / 2.5), ceil(cols / 2 - 9), "OpenVPN Password:",  # noqa
                        curses.A_BOLD)
             scr.refresh()
 
@@ -449,22 +449,22 @@ def settings_tui():
 
     class pvpn_plan(menu):
         """Draws the right side window for choosing ProtonVPN Plans."""
-        
+
         name = "ProtonVPN Plan"
         protonvpn_plans = ['ProtonVPN Free', 'ProtonVPN Basic',
                            'ProtonVPN Plus', 'ProtonVPN Visionary']
         selection = 0
         current_plan = None
-        
+
         def show(self):
             tips.set_tip("Use the up and down arrows to select the option."
-                     " Pressing enter saves the choice.")
+                         " Pressing enter saves the choice.")
 
             update_tier_menu = self.refresh
             protonvpn_plans = self.protonvpn_plans
             scr = self.window
             selection = self.selection
-            
+
             # Initialize Screen
             update_tier_menu(0)
 
@@ -576,8 +576,8 @@ def settings_tui():
         def refresh(self, selection=None):
             scr = self.window
             ovpn_protocols = self.ovpn_protocols
-            instructions = ["OpenVPN can act on two different protocols: UDP and TCP. UDP is preferred for speed but might", # noqa
-                            "be blocked in some networks. TCP is not as fast but a lot harder to block."] # noqa
+            instructions = ["OpenVPN can act on two different protocols: UDP and TCP. UDP is preferred for speed but might",  # noqa
+                            "be blocked in some networks. TCP is not as fast but a lot harder to block."]  # noqa
 
             rows, cols = scr.getmaxyx()
             current_protocol = get_config_value("USER", "default_protocol")
@@ -596,7 +596,7 @@ def settings_tui():
                 i += 1
 
             scr.addstr((half - 2), ceil(cols / 2) -
-                       ceil(len("Input your preferred protocol. (Default: UDP)") / 2), # noqa
+                       ceil(len("Input your preferred protocol. (Default: UDP)") / 2),  # noqa
                        "Input your preferred protocol. (Default: UDP)",
                        curses.A_BOLD)
 
@@ -625,7 +625,6 @@ def settings_tui():
     class dns_management(menu):
         """Draws the right side window for toggling DNS leak protection and setting custom servers."""
         name = "DNS Management"
-        dns_content = ""
         options = ["Disable DNS Management",
                    "Enable DNS Leak Protection (recommended)",
                    "Configure Custom DNS Servers"]
@@ -637,14 +636,13 @@ def settings_tui():
         selection = 0
         current_config = None
         menu_state = 0
-        textpad = None
-        textbox_win = None
-        textpad_win = None
 
         def show(self):
             refresh = self.refresh
             options = self.options
             scr = self.window
+
+            self.menu_state = 0
 
             scr.clear()
             scr.border()
@@ -652,13 +650,14 @@ def settings_tui():
             tips.set_tip("Use the up and down arrows to select the option."
                          " Pressing enter saves the choice.")
 
-            self.current_config = int(get_config_value("USER", "dns_leak_protection")) # noqa
+            self.current_config = int(get_config_value("USER", "dns_leak_protection"))  # noqa
 
             if self.current_config == 0:
-                if self.dns_content != "None":
-                    self.dns_content = get_config_value("USER", "custom_dns")
+                if custom_dns.dns_content != "None":
+                    custom_dns.dns_content = get_config_value(
+                        "USER", "custom_dns").replace(",", "\n")
                     self.current_config = 2
-        
+
             refresh()
 
             while 1:
@@ -677,8 +676,9 @@ def settings_tui():
                         else:
                             set_config_value("USER", "dns_leak_protection",
                                              0)
-                            self.show_secondary_menu()
-                        
+                            self.menu_state = 1
+                            custom_dns.show()
+
                         # Redraw the window so the asterisk moves immediately
                         self.current_config = self.selection
                         refresh()
@@ -689,11 +689,11 @@ def settings_tui():
 
                         if char1 == 27 and char2 == 91 and char3 == 65:
                             # Up
-                            self.selection = (self.selection - 1) % len(options) # noqa
+                            self.selection = (self.selection - 1) % len(options)  # noqa
                             refresh(self.selection)
                         elif char1 == 27 and char2 == 91 and char3 == 66:
                             # Down
-                            self.selection = (self.selection + 1) % len(options) # noqa
+                            self.selection = (self.selection + 1) % len(options)  # noqa
                             refresh(self.selection)
                         elif char1 == 27 and char2 == 91 and char3 in [67, 68]:
                             # left and right
@@ -701,49 +701,13 @@ def settings_tui():
                             break
             tips.set_tip()
 
-        def show_secondary_menu(self):
-            """Secondary menu shown when user wants to use custom DNS servers"""
-            scr = self.window
-            rows, cols = scr.getmaxyx()
-
-            tips.set_tip("Enter 1 IP per line and hit CTRL-G when done.")
-
-            scr.clear()
-            scr.border()
-
-            scr.addstr(ceil(rows / 2 - 7), ceil(cols / 2 - 25),
-                       "Please enter IP address(es) of your DNS Resolvers",
-                       curses.A_BOLD)
-
-            scr.refresh()
-
-            rows, cols = stdscr.getmaxyx()
-            self.surrounding_win = curses.newwin(6, 18, ceil(rows / 2 - 3),
-                                                 ceil(cols - cols / 3 - 9))
-            self.surrounding_win.border()
-            self.surrounding_win.refresh()
-            self.textbox_win = curses.newwin(4, 16, ceil(rows / 2 - 2),
-                                             ceil(cols - cols / 3 - 8))
-            self.textbox = curses.textpad.Textbox(self.textbox_win)
-
-            # Enable Echoing and curser display
-            curses.curs_set(2)
-
-            # Fill in previous config if available
-            if self.dns_content != "":
-                for x in self.dns_content:
-                    self.textbox.do_command(x)
-            
-            # Get user input
-            self.textbox.edit()
-
         def refresh(self, selection=None):
             options = self.options
             scr = self.window
             instructions = self.instructions
 
             rows, cols = scr.getmaxyx()
-            
+
             if self.menu_state == 0:
                 # refresh menu 1
 
@@ -780,9 +744,108 @@ def settings_tui():
 
                 scr.refresh()
             else:
+                custom_dns.refresh()
+
+    class custom_dns(menu):
+            """Menu for adding custom DNS servers"""
+            textpad = None
+            textbox_win = None
+            surrounding_win = None
+            dns_content = ""
+
+            def show(self):
+                scr = self.window
+                rows, cols = scr.getmaxyx()
+
+                tips.set_tip("Enter 1 IP per line and hit CTRL-G when done.")
+
+                scr.clear()
+                scr.border()
+
+                scr.addstr(ceil(rows / 2 - 7), ceil(cols / 2 - 25),
+                           "Please enter IP address(es) of your DNS Resolvers",
+                           curses.A_BOLD)
+
+                scr.refresh()
+
+                rows, cols = stdscr.getmaxyx()
+                self.surrounding_win = curses.newwin(6, 18, ceil(rows / 2 - 3),
+                                                     ceil(cols - cols / 3 - 8))
+                self.surrounding_win.border()
+                self.surrounding_win.refresh()
+                self.textbox_win = curses.newwin(4, 16, ceil(rows / 2 - 2),
+                                                 ceil(cols - cols / 3 - 7))
+                self.textbox = curses.textpad.Textbox(self.textbox_win)
+
+                # Fill in previous config if available
+                if self.dns_content != "":
+                    for x in self.dns_content:
+                        if x == "\n":
+                            # Technically not supposed to do this, but
+                            # do_command doesn't recognise \n as newline
+                            self.textbox._insert_printable_char("\n")
+                        else:
+                            self.textbox.do_command(x)
+
+                # Enable Echoing and curser display
+                curses.curs_set(2)
+
+                valid_ips = False
+
+                while not valid_ips:
+                    # Get user input
+                    self.textbox.edit()
+                    self.dns_content = self.textbox.gather()
+
+                    # Check for errors
+                    dns_content = self.dns_content
+                    dns_servers = dns_content.split("\n")
+
+                    # Throws error if no servers were entered
+                    if len(dns_servers) < 1:
+                        scr.addstr(ceil(rows / 1.5), ceil(cols / 2 - 21),
+                                   "[!] Please enter at least one DNS Server!",
+                                   curses.A_REVERSE)
+
+                    # Checks if IPs are valid and format them
+                    i = 0
+                    valid_ips = True
+                    
+                    # Remove whitespaces and removes empty elements
+                    for x in dns_servers:
+                        dns_servers[i] = x.strip()
+                        if dns_servers[i] == "":
+                            del dns_servers[i]
+                        i += 1
+                    
+                    # Check if IPs are valid
+                    for x in dns_servers:
+                        if not is_valid_ip(x):
+                            valid_ips = False
+
+                    if not valid_ips:
+                        scr.addstr(ceil(rows / 1.5), ceil(cols / 4 - 7),
+                                   "[!] Please enter valid IPv4 addresses!",
+                                   curses.A_REVERSE)
+
+                    scr.refresh()
+                
+                # Reset Terminal
+                curses.curs_set(0)
+                tips.set_tip()
+                self.write_configuration(dns_servers)
+
+            def refresh(self):
                 # refresh menu 2
-                self.dns_content = self.textbox.gather()
-                self.show_secondary_menu()
+                rows, cols = self.window.getmaxyx()
+
+                self.surrounding_win.mvwin(ceil(rows / 2 - 3),
+                                           ceil(cols - cols / 3 - 9))
+                self.textbox_win.mvwin(ceil(rows / 2 - 2),
+                                       ceil(cols - cols / 3 - 8))
+
+            def write_configuration(self, dns_servers):
+                set_config_value("USER", "custom_dns", ", ".join(dns_servers))
 
     class killswitch(menu):
         """ Draws the right side window for managing killswitch."""
@@ -995,6 +1058,9 @@ def settings_tui():
 
     # Initializes the tips window
     tips = tips_scr(tips_window)
+
+    # Initialize custom_dns submenu
+    custom_dns = custom_dns(r_screen)
 
     # Add new menus here:
     uninitialized_menus = [username_password, pvpn_plan, default_protocol,
