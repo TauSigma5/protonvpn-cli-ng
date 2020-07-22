@@ -2,3 +2,4 @@
 requests
 pythondialog
 jinja2
+urwid
